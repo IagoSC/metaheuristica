@@ -1,8 +1,13 @@
 import numpy as np
-from read_entries import parse_vrp_file
+import time
+from read_entries import read_cvrp_file
+import sys
+import math
 
-def split_algorithm(permutation, demands, capacity, distance_matrix):
-    n = len(permutation)
+VISUAL = False
+
+def phenotype_execution(chromosome, demands, capacity, distance_matrix):
+    n = len(chromosome)
     dp = [float('inf')] * (n + 1)
     dp[0] = 0
     predecessors = [-1] * (n + 1)
@@ -10,30 +15,26 @@ def split_algorithm(permutation, demands, capacity, distance_matrix):
     for i in range(1, n + 1):
         total_demand = 0
         for j in range(i, 0, -1):
-            customer = permutation[j-1]
+            customer = chromosome[j-1]
             total_demand += demands[customer]
             if total_demand > capacity:
                 break
-            cost = distance_matrix[0][permutation[j-1]]  # Depot to first customer
+            cost = distance_matrix[0][chromosome[j-1]]  # Depot to first customer
             for k in range(j, i):
-                cost += distance_matrix[permutation[k-1]][permutation[k]]
-            cost += distance_matrix[permutation[i-1]][0]  # Last customer to depot
+                cost += distance_matrix[chromosome[k-1]][chromosome[k]]
+            cost += distance_matrix[chromosome[i-1]][0]  # Last customer to depot
             if dp[j-1] + cost < dp[i]:
                 dp[i] = dp[j-1] + cost
                 predecessors[i] = j-1
     
-    # Backtrack to find the splits
     splits = []
     current = n
     while current > 0:
         prev = predecessors[current]
-        splits.append(permutation[prev:current])
+        splits.append(chromosome[prev:current])
         current = prev
     splits.reverse()
     return dp[n], splits
-
-def initialize_population(num_individuals, num_customers):
-    return [np.random.permutation(num_customers) + 1 for _ in range(num_individuals)]
 
 def tournament_selection(population, fitness, tournament_size):
     selected = []
@@ -56,56 +57,94 @@ def ordered_crossover(parent1, parent2):
             child[ptr] = gene
     return child
 
-def swap_mutation(individual):
-    i, j = np.random.choice(len(individual), 2, replace=False)
-    individual[i], individual[j] = individual[j], individual[i]
-    return individual
+def mutate(chromosome, mutation_rate=0.1):
+    for i in range(math.floor(len(chromosome) * mutation_rate)):
+        i, j = np.random.choice(len(chromosome), 2, replace=False)
+        chromosome[i], chromosome[j] = chromosome[j], chromosome[i]
+        return chromosome
 
-def genetic_algorithm(cvrp_instance, generations=10000, pop_size=50):
+def genetic_algorithm(cvrp_instance, pop_size=100, tournament_size=3, elitism_type='fixed', elitism_factor=0.1):
     demands = cvrp_instance['demands']
     capacity = cvrp_instance['vehicle_capacity']
     distance_matrix = cvrp_instance['distance_matrix']
-    population = initialize_population(pop_size, len(demands)-1)  # Exclude depot
+
+    population = init_population(pop_size, len(demands) - 1)
+
     best_fitness = float('inf')
     best_solution = None
-    
-    for gen in range(generations):
+
+    time_limit = 300  # 5 minutes
+    start_time = time.time()
+
+    # Generation loop
+    for _ in range(int('inf')):
+        elapsed_time = time.time() - start_time
+        if elapsed_time > time_limit:
+            break
+        
         fitness = []
         routes = []
+
         for ind in population:
-            dist, splits = split_algorithm(ind, demands, capacity, distance_matrix)
+            dist, splits = phenotype_execution(ind, demands, capacity, distance_matrix)
             fitness.append(dist)
             routes.append(splits)
             if dist < best_fitness:
                 best_fitness = dist
                 best_solution = splits
-        
+
         # Selection
-        selected = tournament_selection(population, fitness, tournament_size=3)
-        
+        selected = tournament_selection(population, fitness, tournament_size)
+
         # Crossover
+        # We take two consecutive positioned individuals and apply ordered crossover
         offspring = []
         for i in range(0, pop_size, 2):
             parent1, parent2 = selected[i], selected[i+1]
             child1 = ordered_crossover(parent1, parent2)
             child2 = ordered_crossover(parent2, parent1)
             offspring.extend([child1, child2])
-        
+
         # Mutation
-        offspring = [swap_mutation(ind) for ind in offspring]
-        
-        # Elitism: Keep top 10% of previous population
-        elite_size = int(0.1 * pop_size)
-        elite_indices = np.argsort(fitness)[:elite_size]
-        new_population = [population[i] for i in elite_indices]
-        new_population += offspring[:pop_size - elite_size]
-        population = new_population
-    
+        offspring = [mutate(ind) for ind in offspring]
+
+        # Elitism
+        if elitism_type == 'fixed':
+            elite_size = int(elitism_factor * pop_size)
+            elite_indices = np.argsort(fitness)[:elite_size]
+            new_population = [population[i] for i in elite_indices]
+            new_population += offspring[:pop_size - elite_size]
+            population = new_population
+        elif elitism_type == 'slope':
+            print("Not implemented")
+            # TODO
+
     return best_solution, best_fitness
 
-# Example usage
+def init_population(pop_size, num_customers):
+    population = []
+    for _ in range(pop_size):
+        population.append(np.random.permutation(num_customers))
+    return population
+
 if __name__ == "__main__":
-    cvrp_instance = parse_vrp_file('A/A-n32-k5.vrp')
-    best_solution, best_fitness = genetic_algorithm(cvrp_instance)
+    args = sys.argv[1:]
+    population_size = 100
+    tournament_size = 3
+    elitism_type = 'fixed'
+    elitism_factor = 0.1
+
+    if args[0] == '--visual':
+        VISUAL = True
+
+    if len(args) == 4:
+        population_size = int(args[1])
+        tournament_size = int(args[2])
+        elitism_type = args[3]
+        elitism_factor = float(args[4])
+
+
+    cvrp_instance = read_cvrp_file('A/A-n80-k10.vrp')
+    best_solution, best_fitness = genetic_algorithm(cvrp_instance, )
     print("Best solution:", best_solution)
     print("Best fitness:", best_fitness)

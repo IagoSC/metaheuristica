@@ -44,11 +44,15 @@ def tournament_selection(population, fitness, tournament_size):
         selected.append(population[best_idx])
     return selected
 
-def ordered_crossover(parent1, parent2):
+def ordered_crossover(parent1, parent2, type, crossover_ux_rate):
     size = len(parent1)
-    start, end = sorted(np.random.choice(size, 2, replace=False))
     child = [-1] * size
-    child[start:end+1] = parent1[start:end+1]
+    if type == '2x':
+        start, end = sorted(np.random.choice(size, 2, replace=False))
+        child[start:end+1] = parent1[start:end+1]
+    elif type == 'ux':
+        child = np.random.choice([0, 1], size, p=[crossover_ux_rate, 1-crossover_ux_rate],)
+
     ptr = 0
     for gene in parent2:
         if gene not in child:
@@ -63,7 +67,14 @@ def mutate(chromosome, mutation_rate=0.1):
         chromosome[i], chromosome[j] = chromosome[j], chromosome[i]
         return chromosome
 
-def genetic_algorithm(cvrp_instance, pop_size=100, tournament_size=3, elitism_type='fixed', elitism_factor=0.1):
+def genetic_algorithm(cvrp_instance, parameters):
+    pop_size = parameters['population_size']
+    tournament_size = parameters['tournament_size']
+    elitism_factor = parameters['elitism_factor']
+    crossover_type = parameters['crossover_type']
+    mutation_rate = parameters['mutation_rate']
+    crossover_ux_rate = parameters['crossover_ux_rate']
+        
     demands = cvrp_instance['demands']
     capacity = cvrp_instance['vehicle_capacity']
     distance_matrix = cvrp_instance['distance_matrix']
@@ -72,26 +83,29 @@ def genetic_algorithm(cvrp_instance, pop_size=100, tournament_size=3, elitism_ty
 
     best_fitness = float('inf')
     best_solution = None
+    best_fitness_time = 0
 
     time_limit = 300  # 5 minutes
     start_time = time.time()
 
     # Generation loop
-    for _ in range(int('inf')):
+    while True:
         elapsed_time = time.time() - start_time
         if elapsed_time > time_limit:
             break
-        
+
         fitness = []
         routes = []
 
         for ind in population:
-            dist, splits = phenotype_execution(ind, demands, capacity, distance_matrix)
+            dist, ind_routes = phenotype_execution(ind, demands, capacity, distance_matrix)
             fitness.append(dist)
-            routes.append(splits)
+            routes.append(ind_routes)
             if dist < best_fitness:
                 best_fitness = dist
-                best_solution = splits
+                best_solution = ind_routes
+                best_fitness_time = time.time() - start_time
+
 
         # Selection
         selected = tournament_selection(population, fitness, tournament_size)
@@ -101,25 +115,21 @@ def genetic_algorithm(cvrp_instance, pop_size=100, tournament_size=3, elitism_ty
         offspring = []
         for i in range(0, pop_size, 2):
             parent1, parent2 = selected[i], selected[i+1]
-            child1 = ordered_crossover(parent1, parent2)
-            child2 = ordered_crossover(parent2, parent1)
+            child1 = ordered_crossover(parent1, parent2, crossover_type, crossover_ux_rate)
+            child2 = ordered_crossover(parent2, parent1, crossover_type, crossover_ux_rate)
             offspring.extend([child1, child2])
 
         # Mutation
-        offspring = [mutate(ind) for ind in offspring]
+        offspring = [mutate(ind, mutation_rate) for ind in offspring]
 
         # Elitism
-        if elitism_type == 'fixed':
-            elite_size = int(elitism_factor * pop_size)
-            elite_indices = np.argsort(fitness)[:elite_size]
-            new_population = [population[i] for i in elite_indices]
-            new_population += offspring[:pop_size - elite_size]
-            population = new_population
-        elif elitism_type == 'slope':
-            print("Not implemented")
-            # TODO
+        elite_size = int(elitism_factor * pop_size)
+        elite_indices = np.argsort(fitness)[:elite_size]
+        new_population = [population[i] for i in elite_indices]
+        new_population += offspring[:pop_size - elite_size]
+        population = new_population
 
-    return best_solution, best_fitness
+    return best_solution, best_fitness, best_fitness_time
 
 def init_population(pop_size, num_customers):
     population = []
@@ -128,23 +138,31 @@ def init_population(pop_size, num_customers):
     return population
 
 if __name__ == "__main__":
-    args = sys.argv[1:]
-    population_size = 100
-    tournament_size = 3
-    elitism_type = 'fixed'
-    elitism_factor = 0.1
+    instance = sys.argv[1]
+    args = sys.argv[2:]
 
     if args[0] == '--visual':
         VISUAL = True
 
-    if len(args) == 4:
-        population_size = int(args[1])
-        tournament_size = int(args[2])
-        elitism_type = args[3]
-        elitism_factor = float(args[4])
+    parameters = {
+        "population_size": 100,
+        "tournament_size": 3,
+        "elitism_factor": 0.1,
+        "mutation_rate": 0.2,
+        "crossover_type": "2x",
+        "crossover_ux_rate": 0.5,
+    }
+    if len(args) == 6:
+        parameters = {
+            "population_size": int(args[1]),
+            "tournament_size": int(args[2]),
+            "elitism_factor": float(args[3]),
+            "mutation_rate": args[4],
+            "crossover_type": args[5],
+            "crossover_ux_rate": args[6],
+        }
 
-
-    cvrp_instance = read_cvrp_file('A/A-n80-k10.vrp')
-    best_solution, best_fitness = genetic_algorithm(cvrp_instance, )
+    cvrp_instance = read_cvrp_file(instance)
+    best_solution, best_fitness = genetic_algorithm(cvrp_instance, parameters)
     print("Best solution:", best_solution)
     print("Best fitness:", best_fitness)

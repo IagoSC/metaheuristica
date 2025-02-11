@@ -40,7 +40,8 @@ def tournament_selection(population, fitness, tournament_size):
     selected = []
     for _ in range(len(population)):
         candidates = np.random.choice(len(population), tournament_size, replace=False)
-        best_idx = candidates[np.argmin([fitness[c] for c in candidates])]
+        candidates_fitness = [fitness[c] for c in candidates]
+        best_idx = candidates[np.argmin(candidates_fitness)]
         selected.append(population[best_idx])
     return selected
 
@@ -51,7 +52,7 @@ def ordered_crossover(parent1, parent2, type, crossover_ux_rate):
         start, end = sorted(np.random.choice(size, 2, replace=False))
         child[start:end+1] = parent1[start:end+1]
     elif type == 'ux':
-        child = np.random.choice([0, 1], size, p=[crossover_ux_rate, 1-crossover_ux_rate],)
+        child = [np.random.choice([-1, parent1[idx]], 1, p=[1-crossover_ux_rate, crossover_ux_rate])[0] for idx in range(size)]
 
     ptr = 0
     for gene in parent2:
@@ -61,7 +62,7 @@ def ordered_crossover(parent1, parent2, type, crossover_ux_rate):
             child[ptr] = gene
     return child
 
-def mutate(chromosome, mutation_rate=0.1):
+def mutate(chromosome, mutation_rate):
     for i in range(math.floor(len(chromosome) * mutation_rate)):
         i, j = np.random.choice(len(chromosome), 2, replace=False)
         chromosome[i], chromosome[j] = chromosome[j], chromosome[i]

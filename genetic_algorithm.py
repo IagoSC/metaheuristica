@@ -100,8 +100,8 @@ def genetic_algorithm(cvrp_instance, parameters):
         elapsed_time_since_improved_fitness = time.time() - best_fitness_timestamp
         if total_elapsed_time > time_limit:
             break
-        elif elapsed_time_since_improved_fitness > 45:
-            break
+        # elif elapsed_time_since_improved_fitness > 300:
+        #     break
 
         fitness = []
         routes = []

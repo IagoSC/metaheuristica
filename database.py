@@ -1,7 +1,8 @@
 import sqlite3
+import sys
 
 # CONSTANTS
-TABLE_NAME = 'entries_avg_gen'
+TABLE_NAME = 'entries_desktop_INF_tolerance'
 FILE_NAME = 'variable_calibration.db'
 
 con = sqlite3.connect(FILE_NAME)
@@ -35,7 +36,7 @@ def insert_entry(instance, args, best_solution, best_fitness, best_fitness_time,
             {parameters['elitism_factor']},
             {parameters['mutation_rate']},
             "{parameters['crossover_type']}{parameters['crossover_ux_rate']}",
-            \"{best_solution}\",
+            "{best_solution}",
             {avg_gen_time} 
         );
                 """

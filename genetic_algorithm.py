@@ -3,6 +3,7 @@ import time
 from read_entries import read_cvrp_file
 import sys
 import math
+from database import insert_entry
 
 VISUAL = False
 
@@ -85,6 +86,7 @@ def genetic_algorithm(cvrp_instance, parameters):
     best_fitness = float('inf')
     best_solution = None
     best_fitness_time = 0
+    best_fitness_timestamp = float('inf')
 
     time_limit = 300  # 5 minutes
     start_time = time.time()
@@ -153,6 +155,8 @@ def init_population(pop_size, num_customers):
     return population
 
 if __name__ == "__main__":
+    print(sys.argv)
+
     instance = sys.argv[1]
     args = sys.argv[2:]
 
@@ -160,24 +164,19 @@ if __name__ == "__main__":
         VISUAL = True
 
     parameters = {
-        "population_size": 100,
-        "tournament_size": 3,
-        "elitism_factor": 0.1,
-        "mutation_rate": 0.2,
-        "crossover_type": "2x",
-        "crossover_ux_rate": 0.5,
+        "population_size": int(args[0]),
+        "tournament_size": int(args[1]),
+        "elitism_factor": float(args[2]),
+        "mutation_rate": float(args[3]),
+        "crossover_type": args[4],
+        "crossover_ux_rate": float(args[5]),
     }
-    if len(args) == 6:
-        parameters = {
-            "population_size": int(args[1]),
-            "tournament_size": int(args[2]),
-            "elitism_factor": float(args[3]),
-            "mutation_rate": args[4],
-            "crossover_type": args[5],
-            "crossover_ux_rate": args[6],
-        }
+    
 
     cvrp_instance = read_cvrp_file(instance)
-    best_solution, best_fitness = genetic_algorithm(cvrp_instance, parameters)
+    best_solution, best_fitness, best_fitness_time, avg_gen_time = genetic_algorithm(cvrp_instance, parameters)
+
+    insert_entry(instance, args, best_solution, best_fitness, best_fitness_time, parameters, avg_gen_time)
+
     print("Best solution:", best_solution)
     print("Best fitness:", best_fitness)

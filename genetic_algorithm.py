@@ -90,21 +90,31 @@ def genetic_algorithm(cvrp_instance, parameters):
     start_time = time.time()
 
     # Generation loop
+    avg_gen_time = 0
+    gen_num = 1
+    last_gen_time = start_time
     while True:
-        elapsed_time = time.time() - start_time
-        if elapsed_time > time_limit:
+        total_elapsed_time = time.time() - start_time
+        elapsed_time_since_improved_fitness = time.time() - best_fitness_timestamp
+        if total_elapsed_time > time_limit:
+            break
+        elif elapsed_time_since_improved_fitness > 45:
             break
 
         fitness = []
         routes = []
+
 
         for ind in population:
             dist, ind_routes = phenotype_execution(ind, demands, capacity, distance_matrix)
             fitness.append(dist)
             routes.append(ind_routes)
             if dist < best_fitness:
+                print("New best fitness:", dist)
+                print("Elapsed time:", time.time() - start_time)
                 best_fitness = dist
-                best_solution = ind_routes
+                best_solution = [[int(element) for element in sublist] for sublist in ind_routes]
+                best_fitness_timestamp = time.time()
                 best_fitness_time = time.time() - start_time
 
 
@@ -112,7 +122,7 @@ def genetic_algorithm(cvrp_instance, parameters):
         selected = tournament_selection(population, fitness, tournament_size)
 
         # Crossover
-        # We take two consecutive positioned individuals and apply ordered crossover
+        # We take two  individuals and apply ordered crossover
         offspring = []
         for i in range(0, pop_size, 2):
             parent1, parent2 = selected[i], selected[i+1]
@@ -130,7 +140,11 @@ def genetic_algorithm(cvrp_instance, parameters):
         new_population += offspring[:pop_size - elite_size]
         population = new_population
 
-    return best_solution, best_fitness, best_fitness_time
+        now = time.time()
+        avg_gen_time = (now - last_gen_time) / gen_num
+        last_gen_time = now
+
+    return best_solution, best_fitness, best_fitness_time, avg_gen_time
 
 def init_population(pop_size, num_customers):
     population = []

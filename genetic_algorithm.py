@@ -8,24 +8,13 @@ from database import insert_entry
 VISUAL = False
 
 
-'''
-Route #1: 21 31 19 17 13 7 26
-Route #2: 12 1 16 30
-Route #3: 27 24
-Route #4: 29 18 8 9 22 15 10 25 5 20
-Route #5: 14 28 11 4 23 3 2 6
-Cost 784
-'''
-test = [21, 31, 19, 17, 13, 7, 26,12, 1, 16, 30, 27, 24, 29, 18, 8, 9, 22, 15, 10, 25, 5, 20, 14, 28, 11, 4, 23, 3, 2, 6,]
+def phenotype_execution(chromosome, demands, capacity, distance_matrix):
+    chromosome = remove_numpy(chromosome)
 
-def old_cost_function(chromosome, demands, capacity, distance_matrix):
-    chromosome = remove_numpy(test)
     n = len(chromosome)
     dp = [float('inf')] * (n + 1)
     dp[0] = 0
     predecessors = [-1] * (n + 1)
-
-    chromosome = remove_numpy(chromosome)
     for i in range(1, n + 1):
         total_demand = 0
         for j in range(i, 0, -1):
@@ -33,13 +22,15 @@ def old_cost_function(chromosome, demands, capacity, distance_matrix):
             total_demand += demands[customer]
             if total_demand > capacity:
                 break
-            cost = distance_matrix[0][chromosome[j-1]]  # Depot to first customer
+            cost = distance_matrix[0][customer]  # Depot to first customer
             for k in range(j, i):
                 cost += distance_matrix[chromosome[k-1]][chromosome[k]]
             cost += distance_matrix[chromosome[i-1]][0]  # Last customer to depot
             if dp[j-1] + cost < dp[i]:
                 dp[i] = dp[j-1] + cost
                 predecessors[i] = j-1
+    
+    # Backtrack to find the splits
     splits = []
     current = n
     while current > 0:
@@ -47,40 +38,7 @@ def old_cost_function(chromosome, demands, capacity, distance_matrix):
         splits.append(chromosome[prev:current])
         current = prev
     splits.reverse()
-
-    print(dp[n], splits)
-
     return dp[n], splits
-
-
-
-
-def phenotype_execution(chromosome, demands, capacity, distance_matrix):
-    return old_cost_function(chromosome, demands, capacity, distance_matrix)
-    chromosome = test
-    n = len(chromosome)
-    # dp = [float('inf')] * (n + 1)
-    # dp[0] = 0
-    # predecessors = [-1] * (n + 1)
-
-    chromosome = remove_numpy(chromosome)
-    
-    splits = []
-    acc_demand = 0
-    cost_distance = 0
-    route_init=0
-    for i in range(1, n):
-        acc_demand += demands[chromosome[i]]
-        cost_distance += distance_matrix[chromosome[i]][chromosome[i-1]]
-        if acc_demand > capacity:
-            acc_demand = 0
-            cost_distance = 0
-            splits.append(chromosome[route_init:i])
-            route_init=i+1
-    splits.append(chromosome[route_init:n])
-
-    print(cost_distance, splits)
-    return cost_distance, splits
 
 def tournament_selection(population, fitness, tournament_size):
     selected = []
@@ -129,7 +87,7 @@ def genetic_algorithm(cvrp_instance, parameters):
     capacity = cvrp_instance['vehicle_capacity']
     distance_matrix = cvrp_instance['distance_matrix']
 
-    population = init_population(pop_size, len(demands))
+    population = init_population(pop_size, len(demands) - 1) # exclude depot
 
     best_fitness = float('inf')
     best_solution = None
@@ -148,12 +106,11 @@ def genetic_algorithm(cvrp_instance, parameters):
         elapsed_time_since_improved_fitness = time.time() - best_fitness_timestamp
         if total_elapsed_time > time_limit:
             break
-        # elif elapsed_time_since_improved_fitness > 300:
+        # elif elapsed_time_since_improved_fitness > 45:
         #     break
 
         fitness = []
         routes = []
-
 
         for ind in population:
             dist, ind_routes = phenotype_execution(ind, demands, capacity, distance_matrix)
@@ -172,7 +129,6 @@ def genetic_algorithm(cvrp_instance, parameters):
         selected = tournament_selection(population, fitness, tournament_size)
 
         # Crossover
-        # We take two  individuals and apply ordered crossover
         offspring = []
         for i in range(0, pop_size, 2):
             parent1, parent2 = selected[i], selected[i+1]
@@ -197,10 +153,7 @@ def genetic_algorithm(cvrp_instance, parameters):
     return best_solution, best_fitness, best_fitness_time, avg_gen_time
 
 def init_population(pop_size, num_customers):
-    population = []
-    for _ in range(pop_size):
-        population.append(np.random.permutation(num_customers))
-    return population
+    return [np.random.permutation(np.arange(1, num_customers + 1)) for _ in range(pop_size)]
 
 if __name__ == "__main__":
     print(sys.argv)

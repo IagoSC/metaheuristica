@@ -9,8 +9,8 @@
             "type": "debugpy",
             "request": "launch",
             "program": "genetic_algorithm.py",
-            "args": ["A/A-n32-k5.vrp","30", "5", "0.12", "0.1", "2x", "0"]
-
+            "args": ["DS_set/DS-n8-k3.vrp","10", "2", "0.12", "0.25", "2x", "0"]
+            // "args": ["A/A-n32-k5.vrp", "20", "5", "0.12", "0.1", "2x", "0"]
         }
     ]
 }

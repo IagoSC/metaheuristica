@@ -1,26 +1,30 @@
 import sqlite3
-import sys
 
 # CONSTANTS
-TABLE_NAME = 'entries_desktop_INF_tolerance'
 FILE_NAME = 'variable_calibration.db'
 
-con = sqlite3.connect(FILE_NAME)
-cur = con.cursor()
-cur.execute(f"""
-    CREATE TABLE IF NOT EXISTS {TABLE_NAME}(
-            uuid VARCHAR PRIMARY KEY,
-            instance VARCHAR,
-            pop_size int,
-            tournament_size int,
-            elitism_factor float,
-            mutation_rate float,
-            crossover VARCHAR,
-            best_solution VARCHAR,
-            best_fitness float,
-            best_fitness_time float,
-            avg_gen_time float
-);""")
+def init_database(table_name):
+    global TABLE_NAME
+    global cur
+    global con
+
+    TABLE_NAME = table_name
+    con = sqlite3.connect(FILE_NAME)
+    cur = con.cursor()
+    cur.execute(f"""
+        CREATE TABLE IF NOT EXISTS {TABLE_NAME}(
+                uuid VARCHAR PRIMARY KEY,
+                instance VARCHAR,
+                pop_size int,
+                tournament_size int,
+                elitism_factor float,
+                mutation_rate float,
+                crossover VARCHAR,
+                best_solution VARCHAR,
+                best_fitness float,
+                best_fitness_time float,
+                avg_gen_time float
+    );""")
 
 
 def insert_entry(instance, args, best_solution, best_fitness, best_fitness_time, parameters, avg_gen_time):

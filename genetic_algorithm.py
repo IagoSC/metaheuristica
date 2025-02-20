@@ -3,7 +3,7 @@ import time
 from read_entries import read_cvrp_file
 import sys
 import math
-from database import insert_entry
+from database import insert_entry, init_database
 
 VISUAL = False
 
@@ -158,8 +158,12 @@ def init_population(pop_size, num_customers):
 if __name__ == "__main__":
     print(sys.argv)
 
-    instance = sys.argv[1]
-    args = sys.argv[2:]
+    table_name = sys.argv[1]
+
+    init_database(table_name)
+
+    instance = sys.argv[2]
+    args = sys.argv[3:]
 
     if args[0] == '--visual':
         VISUAL = True

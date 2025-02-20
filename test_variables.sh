@@ -23,11 +23,12 @@ do
         for cr in "${crossover_rate[@]}"
         do 
             cmd="python3 genetic_algorithm.py $table $problem $ps $ts $ef $mr $ct $cr"
-
+            echo $cmd
             sh -c "$cmd" >> output
         done
     else
-        cmd="python3 genetic_algorithm.py $table $problem $ps $ts $ef $mr $ct $cr"
+        cmd="python3 genetic_algorithm.py $table $problem $ps $ts $ef $mr $ct $cr 0"
+        echo $cmd
         sh -c "$cmd" >> output
     fi
 done

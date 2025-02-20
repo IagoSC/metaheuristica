@@ -1,7 +1,9 @@
 import sqlite3
+from time import sleep
 
 # CONSTANTS
-FILE_NAME = 'variable_calibration.db'
+FILE_NAME = 'variable_execution.db'
+TABLE_NAME = 'calibration'
 
 def init_database(table_name):
     global TABLE_NAME
@@ -11,7 +13,7 @@ def init_database(table_name):
     TABLE_NAME = table_name
     con = sqlite3.connect(FILE_NAME)
     cur = con.cursor()
-    cur.execute(f"""
+    cmd = f"""
         CREATE TABLE IF NOT EXISTS {TABLE_NAME}(
                 uuid VARCHAR PRIMARY KEY,
                 instance VARCHAR,
@@ -24,7 +26,8 @@ def init_database(table_name):
                 best_fitness float,
                 best_fitness_time float,
                 avg_gen_time float
-    );""")
+    );"""
+    cur.execute(cmd)
 
 
 def insert_entry(instance, args, best_solution, best_fitness, best_fitness_time, parameters, avg_gen_time):

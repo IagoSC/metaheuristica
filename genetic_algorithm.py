@@ -7,7 +7,6 @@ from database import insert_entry, init_database
 
 VISUAL = False
 
-
 def phenotype_execution(chromosome, demands, capacity, distance_matrix):
     chromosome = remove_numpy(chromosome)
 
@@ -101,11 +100,13 @@ def genetic_algorithm(cvrp_instance, parameters):
     avg_gen_time = 0
     gen_num = 1
     last_gen_time = start_time
+
     while True:
         total_elapsed_time = time.time() - start_time
-        elapsed_time_since_improved_fitness = time.time() - best_fitness_timestamp
         if total_elapsed_time > time_limit:
             break
+    
+        elapsed_time_since_improved_fitness = time.time() - best_fitness_timestamp
         # elif elapsed_time_since_improved_fitness > 45:
         #     break
 

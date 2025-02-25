@@ -7,6 +7,16 @@ from database import insert_entry, init_database
 
 VISUAL = False
 
+'''
+Entries:
+    individual chromosome in format 1D array
+    demands of each customer
+    capacity of the vehicles
+    distance matrix
+Returns:
+    total cost of the solution
+    list of routes
+'''
 def phenotype_execution(chromosome, demands, capacity, distance_matrix):
     chromosome = remove_numpy(chromosome)
 
@@ -21,12 +31,12 @@ def phenotype_execution(chromosome, demands, capacity, distance_matrix):
         for j in range(i, n):
             customer = chromosome[j]
             total_demand += demands[customer]
+            if total_demand > capacity:
+                break
             if j == i:
                 cost += distance_matrix[0][customer]  # Depot to first customer
             else:
                 cost += distance_matrix[chromosome[j-1]][customer]
-            if total_demand > capacity:
-                break
             route_cost = cost + distance_matrix[customer][0]  # Last customer to depot
             if acc_cost[i] + route_cost < acc_cost[j+1]:
                 predecessors[j+1] = i
@@ -42,7 +52,15 @@ def phenotype_execution(chromosome, demands, capacity, distance_matrix):
     splits.reverse()
     return acc_cost[n], splits
 
-def tournament_selection(population, fitness, tournament_size):
+'''
+Entries:
+    population subjected to selection
+    fitness of each individual
+    tournament size
+Returns:
+    selected individuals with len = len(population)
+'''
+def tournament_selection(population, fitness, tournament_size):    
     selected = []
     for _ in range(len(population)):
         candidates = np.random.choice(len(population), tournament_size, replace=False)
@@ -51,6 +69,15 @@ def tournament_selection(population, fitness, tournament_size):
         selected.append(population[best_idx])
     return selected
 
+
+'''
+Entries:
+    two parents
+    crossover type (2x or ux)
+    crossover rate for ux
+Returns:
+    child chromosome
+'''
 def ordered_crossover(parent1, parent2, type, crossover_ux_rate):
     size = len(parent1)
     child = [-1] * size

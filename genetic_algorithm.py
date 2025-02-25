@@ -4,10 +4,14 @@ from read_entries import read_cvrp_file
 import sys
 import math
 from database import insert_entry, init_database
+import matplotlib.pyplot as plt 
 
-VISUAL = False
+fitness_history = []
+
 
 '''
+Calculates objective function of a solution
+
 Entries:
     individual chromosome in format 1D array
     demands of each customer
@@ -53,12 +57,13 @@ def phenotype_execution(chromosome, demands, capacity, distance_matrix):
     return acc_cost[n], splits
 
 '''
+
 Entries:
     population subjected to selection
     fitness of each individual
     tournament size
 Returns:
-    selected individuals with len = len(population)
+    selected n individuals where n = len(population)
 '''
 def tournament_selection(population, fitness, tournament_size):    
     selected = []
@@ -71,6 +76,7 @@ def tournament_selection(population, fitness, tournament_size):
 
 
 '''
+Makes a new chromosome by crossing two parents
 Entries:
     two parents
     crossover type (2x or ux)
@@ -95,6 +101,14 @@ def ordered_crossover(parent1, parent2, type, crossover_ux_rate):
             child[ptr] = gene
     return child
 
+'''
+Mutates a chromosome by swapping two genes m times
+Entries:
+    chromosome
+    mutation rate
+Returns:
+    mutated chromosome (swap two genes for m mutations, m = mutation_rate * len(chromosome))
+'''
 def mutate(chromosome, mutation_rate):
     for i in range(math.floor(len(chromosome) * mutation_rate)):
         i, j = np.random.choice(len(chromosome), 2, replace=False)
@@ -131,6 +145,7 @@ def genetic_algorithm(cvrp_instance, parameters):
     gen_num = 1
     last_gen_time = start_time
 
+
     while True:
         total_elapsed_time = time.time() - start_time
         if total_elapsed_time > time_limit:
@@ -148,12 +163,27 @@ def genetic_algorithm(cvrp_instance, parameters):
             fitness.append(dist)
             routes.append(ind_routes)
             if dist < best_fitness:
+
                 print("New best fitness:", dist)
                 print("Elapsed time:", time.time() - start_time)
                 best_fitness = dist
                 best_solution = [remove_numpy(sbl) for sbl in ind_routes]
                 best_fitness_timestamp = time.time()
                 best_fitness_time = time.time() - start_time
+
+                # Plotting the best fitness evolution
+                
+                global fitness_history
+                fitness_history.append(best_fitness)
+                plt.plot(fitness_history)
+                plt.xlabel('Generation')
+                plt.ylabel('Best Fitness')
+                plt.title('Evolution of Best Fitness')
+                plt.draw()
+                plt.pause(0.01)
+
+
+            
 
 
         # Selection
@@ -183,6 +213,15 @@ def genetic_algorithm(cvrp_instance, parameters):
 
     return best_solution, best_fitness, best_fitness_time, avg_gen_time
 
+
+'''
+Initializes the population with random permutations of the customers
+Entries:
+    population size
+    number of customers
+Returns:
+    list of permutations
+'''
 def init_population(pop_size, num_customers):
     return [np.random.permutation(np.arange(1, num_customers + 1)) for _ in range(pop_size)]
 

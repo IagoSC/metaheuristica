@@ -11,23 +11,26 @@ def phenotype_execution(chromosome, demands, capacity, distance_matrix):
     chromosome = remove_numpy(chromosome)
 
     n = len(chromosome)
-    dp = [float('inf')] * (n + 1)
-    dp[0] = 0
+    acc_cost = [float('inf')] * (n + 1)
+    acc_cost[0] = 0
     predecessors = [-1] * (n + 1)
-    for i in range(1, n + 1):
+
+    for i in range(0, n):
         total_demand = 0
-        for j in range(i, 0, -1):
-            customer = chromosome[j-1]
+        cost = 0
+        for j in range(i, n):
+            customer = chromosome[j]
             total_demand += demands[customer]
+            if j == i:
+                cost += distance_matrix[0][customer]  # Depot to first customer
+            else:
+                cost += distance_matrix[chromosome[j-1]][customer]
             if total_demand > capacity:
                 break
-            cost = distance_matrix[0][customer]  # Depot to first customer
-            for k in range(j, i):
-                cost += distance_matrix[chromosome[k-1]][chromosome[k]]
-            cost += distance_matrix[chromosome[i-1]][0]  # Last customer to depot
-            if dp[j-1] + cost < dp[i]:
-                dp[i] = dp[j-1] + cost
-                predecessors[i] = j-1
+            route_cost = cost + distance_matrix[customer][0]  # Last customer to depot
+            if acc_cost[i] + route_cost < acc_cost[j+1]:
+                predecessors[j+1] = i
+                acc_cost[j+1] = acc_cost[i] + route_cost
     
     # Backtrack to find the splits
     splits = []
@@ -37,7 +40,7 @@ def phenotype_execution(chromosome, demands, capacity, distance_matrix):
         splits.append(chromosome[prev:current])
         current = prev
     splits.reverse()
-    return dp[n], splits
+    return acc_cost[n], splits
 
 def tournament_selection(population, fitness, tournament_size):
     selected = []

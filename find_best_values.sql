@@ -4,11 +4,11 @@ WITH "1st_quartil_best_fitness_by_instance" AS (
     FROM "entries_desktop_INF_tolerance_13_02_25"
     GROUP BY instance
 )
-SELECT count(*), crossover
+SELECT count(*), pop_size
 FROM "entries_desktop_INF_tolerance_13_02_25" e
 JOIN "1st_quartil_best_fitness_by_instance" a ON e.instance = a.instance
 WHERE e.best_fitness < a."1st_quartile_best_fitness"
-GROUP BY e.crossover
+GROUP BY e.pop_size
 ORDER BY a.instance DESC
 
 /*Selected 

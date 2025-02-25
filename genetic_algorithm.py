@@ -118,6 +118,10 @@ def mutate(chromosome, mutation_rate):
 def remove_numpy(array):
     return  [int(el) for el in array] 
 
+
+'''
+Execute the whole algorithm for an instance of the problem given the parameters
+'''
 def genetic_algorithm(cvrp_instance, parameters):
     pop_size = parameters['population_size']
     tournament_size = parameters['tournament_size']
@@ -145,6 +149,8 @@ def genetic_algorithm(cvrp_instance, parameters):
     gen_num = 1
     last_gen_time = start_time
 
+    global all_fitness
+    all_fitness = []    
 
     while True:
         total_elapsed_time = time.time() - start_time
@@ -162,29 +168,15 @@ def genetic_algorithm(cvrp_instance, parameters):
             dist, ind_routes = phenotype_execution(ind, demands, capacity, distance_matrix)
             fitness.append(dist)
             routes.append(ind_routes)
-            if dist < best_fitness:
+            all_fitness.append(dist)
 
+            if dist < best_fitness:
                 print("New best fitness:", dist)
                 print("Elapsed time:", time.time() - start_time)
                 best_fitness = dist
                 best_solution = [remove_numpy(sbl) for sbl in ind_routes]
                 best_fitness_timestamp = time.time()
                 best_fitness_time = time.time() - start_time
-
-                # Plotting the best fitness evolution
-                
-                global fitness_history
-                fitness_history.append(best_fitness)
-                plt.plot(fitness_history)
-                plt.xlabel('Generation')
-                plt.ylabel('Best Fitness')
-                plt.title('Evolution of Best Fitness')
-                plt.draw()
-                plt.pause(0.01)
-
-
-            
-
 
         # Selection
         selected = tournament_selection(population, fitness, tournament_size)
@@ -250,6 +242,14 @@ if __name__ == "__main__":
 
     cvrp_instance = read_cvrp_file(instance)
     best_solution, best_fitness, best_fitness_time, avg_gen_time = genetic_algorithm(cvrp_instance, parameters)
+
+    plt.plot(all_fitness, label='All Fitness')
+    plt.xlabel('Generation')
+    plt.ylabel('Fitness')
+    plt.title('Evolution of Fitness')
+    plt.legend()
+    plt.draw()
+    plt.savefig(f'fitness_evolution_{instance}_{np.random.choice(1000)}.png')
 
     insert_entry(instance, args, best_solution, best_fitness, best_fitness_time, parameters, avg_gen_time)
 
